@@ -1,14 +1,14 @@
-name: Deploy Full App to Railway (Alternative)
+name: Railway Database Migrations Only
 
-# NOTE: This workflow deploys the full Next.js app to Railway.
-# For standard Next.js deployment, use Vercel instead.
-# This is kept as an alternative option.
+# NOTE: This workflow ONLY runs database migrations on Railway.
+# The Next.js app runs on Vercel, NOT Railway.
+# Railway is used ONLY for PostgreSQL database hosting.
 
 on:
   workflow_dispatch:
     inputs:
-      deploy:
-        description: 'Deploy to Railway?'
+      run_migrations:
+        description: 'Run database migrations?'
         required: true
         default: 'false'
         type: choice
@@ -17,8 +17,8 @@ on:
           - 'false'
 
 jobs:
-  deploy:
-    if: github.event.inputs.deploy == 'true'
+  migrate:
+    if: github.event.inputs.run_migrations == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -33,18 +33,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
-      - name: Build project
-        run: npm run build
-      
       - name: Install Railway CLI
         run: npm install -g @railway/cli
       
-      - name: Deploy to Railway
-        run: railway up
+      - name: Run Database Migrations
+        run: railway run npx prisma migrate deploy
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
       
-      - name: Run Migrations
-        run: railway run npx prisma migrate deploy
+      - name: Verify Migrations
+        run: railway run npx prisma migrate status
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
