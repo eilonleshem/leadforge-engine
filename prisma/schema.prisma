@@ -1,0 +1,186 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // directUrl is used by `prisma migrate deploy` when DATABASE_URL points to
+  // a connection-pooler (e.g. Supabase pgBouncer, Neon pooler).
+  // Set DIRECT_DATABASE_URL only if you use a pooler; otherwise it's optional.
+  directUrl = env("DIRECT_DATABASE_URL")
+}
+
+enum LeadType {
+  FORM
+  CALL
+}
+
+enum LeadStatus {
+  PENDING_OTP
+  VERIFIED
+  QUALIFIED_CALL
+  DUPLICATE
+  INVALID
+  DELIVERED
+  FAILED
+}
+
+enum IssueType {
+  STORM
+  LEAK
+  REPLACE
+  OTHER
+}
+
+enum Urgency {
+  TODAY
+  THIS_WEEK
+  THIS_MONTH
+}
+
+enum DeliveryType {
+  WEBHOOK
+  EMAIL
+}
+
+enum DeliveryStatus {
+  SENT
+  FAILED
+  RETRY
+  PENDING
+}
+
+model Lead {
+  id                String       @id @default(cuid())
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  
+  type              LeadType     @default(FORM)
+  status            LeadStatus   @default(PENDING_OTP)
+  
+  // Contact info
+  firstName         String
+  lastName          String
+  phone             String
+  email             String?
+  
+  // Location
+  zip               String
+  city              String?
+  state             String?
+  
+  // Qualification
+  homeowner         Boolean      @default(true)
+  issueType         IssueType?
+  urgency           Urgency?
+  
+  // Tracking
+  utmSource         String?
+  utmCampaign       String?
+  utmContent        String?
+  utmTerm           String?
+  campaignId        String?
+  landingPage       String?
+  
+  // Fraud prevention
+  ipHash            String?
+  userAgent         String?
+  
+  // Consent
+  consentTimestamp  DateTime?
+  consentVersion    String?
+  
+  // Deduplication
+  duplicateOfLeadId String?
+  duplicateOf       Lead?        @relation("LeadDuplicates", fields: [duplicateOfLeadId], references: [id])
+  duplicates        Lead[]       @relation("LeadDuplicates")
+  
+  // Relations
+  calls             Call[]
+  deliveries        Delivery[]
+  
+  @@index([phone, zip])
+  @@index([createdAt])
+  @@index([status])
+  @@index([type])
+}
+
+model Call {
+  id           String   @id @default(cuid())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  sid          String   @unique
+  fromNumber   String
+  toNumber     String
+  duration     Int      @default(0)
+  status       String
+  recordingUrl String?
+  
+  campaignId   String?
+  utmSource    String?
+  utmCampaign  String?
+  utmContent   String?
+  utmTerm      String?
+  
+  leadId       String?
+  lead         Lead?    @relation(fields: [leadId], references: [id])
+  
+  @@index([fromNumber])
+  @@index([createdAt])
+  @@index([sid])
+}
+
+model Buyer {
+  id           String       @id @default(cuid())
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  
+  name         String
+  deliveryType DeliveryType
+  webhookUrl   String?
+  email        String?
+  pricePerLead Float        @default(0)
+  coverage     Json         @default("[]") // Array of ZIP codes or state codes
+  isActive     Boolean      @default(true)
+  
+  deliveries   Delivery[]
+  
+  @@index([isActive])
+}
+
+model Delivery {
+  id           String         @id @default(cuid())
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  
+  attempt      Int            @default(1)
+  status       DeliveryStatus @default(PENDING)
+  responseCode Int?
+  responseBody String?
+  
+  leadId       String
+  lead         Lead           @relation(fields: [leadId], references: [id])
+  
+  buyerId      String
+  buyer        Buyer          @relation(fields: [buyerId], references: [id])
+  
+  @@index([leadId])
+  @@index([buyerId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model AdminUser {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  email     String   @unique
+  password  String   // Hashed with bcrypt
+  name      String?
+  isActive  Boolean  @default(true)
+  
+  @@index([email])
+}
