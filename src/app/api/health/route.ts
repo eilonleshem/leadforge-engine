@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import packageJson from '../../../../package.json'
 import { isDatabaseConfigured } from '@/lib/env'
 import { prisma } from '@/lib/prisma'
 
@@ -18,7 +17,7 @@ export async function GET() {
   } = {
     status: 'ok',
     timestamp: new Date().toISOString(),
-    version: packageJson.version,
+    version: process.env.npm_package_version || '1.0.0',
     uptime: process.uptime(),
   }
 
