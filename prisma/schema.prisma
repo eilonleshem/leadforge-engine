@@ -3,12 +3,12 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  // directUrl is used by `prisma migrate deploy` when DATABASE_URL points to
-  // a connection-pooler (e.g. Supabase pgBouncer, Neon pooler).
-  // Set DIRECT_DATABASE_URL only if you use a pooler; otherwise it's optional.
-  directUrl = env("DIRECT_DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  // Note: directUrl is only needed if using a connection pooler (Neon/Supabase).
+  // For Railway, DATABASE_URL is sufficient (no pooler).
+  // If you need directUrl, uncomment and set DIRECT_DATABASE_URL env var:
+  // directUrl = env("DIRECT_DATABASE_URL")
 }
 
 enum LeadType {
