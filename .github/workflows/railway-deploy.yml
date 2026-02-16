@@ -1,13 +1,24 @@
-name: Deploy to Railway
+name: Deploy Full App to Railway (Alternative)
+
+# NOTE: This workflow deploys the full Next.js app to Railway.
+# For standard Next.js deployment, use Vercel instead.
+# This is kept as an alternative option.
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
+    inputs:
+      deploy:
+        description: 'Deploy to Railway?'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
 
 jobs:
   deploy:
+    if: github.event.inputs.deploy == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -33,17 +44,7 @@ jobs:
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
       
-      # Optional: Set environment variables via Railway CLI
-      # Note: Requires RAILWAY_TOKEN secret in GitHub
-      - name: Set Environment Variables (if needed)
-        if: false  # Set to true to enable
-        run: |
-          railway variables set DATABASE_URL="${{ secrets.DATABASE_URL }}"
-          railway variables set NEXTAUTH_SECRET="${{ secrets.NEXTAUTH_SECRET }}"
-          railway variables set ADMIN_EMAIL="${{ secrets.ADMIN_EMAIL }}"
-          railway variables set ADMIN_PASSWORD="${{ secrets.ADMIN_PASSWORD }}"
-          railway variables set UPSTASH_REDIS_REST_URL="${{ secrets.UPSTASH_REDIS_REST_URL }}"
-          railway variables set UPSTASH_REDIS_REST_TOKEN="${{ secrets.UPSTASH_REDIS_REST_TOKEN }}"
-          railway variables set APP_BASE_URL="${{ secrets.APP_BASE_URL }}"
+      - name: Run Migrations
+        run: railway run npx prisma migrate deploy
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}

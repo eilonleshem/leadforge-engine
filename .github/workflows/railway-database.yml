@@ -1,0 +1,42 @@
+name: Setup Railway Database
+
+on:
+  workflow_dispatch:
+  # Only run manually or on database setup
+
+jobs:
+  setup-db:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+      
+      - name: Run Prisma Migrations
+        run: |
+          railway link --service ${{ secrets.RAILWAY_SERVICE_ID }}
+          railway run npx prisma migrate deploy
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      
+      - name: Seed Database (Optional)
+        if: ${{ github.event.inputs.seed == 'true' }}
+        run: |
+          railway run npm run db:seed
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
