@@ -96,13 +96,21 @@ After fixing:
 1. **Railway Dashboard**:
    - ✅ Only PostgreSQL service exists
    - ✅ No web service trying to deploy
+   - ✅ `DATABASE_URL` exists (but check if it's public or internal)
 
-2. **Vercel Dashboard**:
+2. **DATABASE_URL Check**:
+   - ⚠️ **Important**: Railway shows `DATABASE_URL` with `postgres.railway.internal`
+   - ⚠️ This is **internal** - only works within Railway network
+   - ✅ For Vercel: Need **public** connection string
+   - ✅ Get public URL: Railway Dashboard → PostgreSQL → Connect tab
+
+3. **Vercel Dashboard**:
    - ✅ Application deployed successfully
-   - ✅ Health endpoint works: `/api/health`
+   - ✅ `DATABASE_URL` set with **public** connection string
+   - ✅ Health endpoint works: `/api/health` → `"database": "connected"`
 
-3. **Database**:
-   - ✅ Can connect via `DATABASE_URL`
+4. **Database**:
+   - ✅ Can connect via public `DATABASE_URL`
    - ✅ Migrations can run: `npm run db:deploy`
 
 ---
